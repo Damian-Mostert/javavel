@@ -1,5 +1,7 @@
 import { Service } from "@/vendor/service";
 
-export class TestService extends Service {
-  async handler(...args: any[]) {}
+export class testService extends Service {
+  async handler(...args: any[]) {
+    // Service logic here
+  }
 }
