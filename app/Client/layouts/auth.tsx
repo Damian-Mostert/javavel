@@ -1,3 +1,10 @@
-export default function AuthLayout() {
-  return <></>;
+import Footer from "../components/footer";
+
+export default function AuthLayout({ Children }: LayoutProps) {
+  return (
+    <>
+      <Children />
+      <Footer />
+    </>
+  );
 }

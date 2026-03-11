@@ -1,20 +1,18 @@
 import chalk from "chalk";
 import fs from "fs";
 import { join } from "path";
-import SyncCommandKernel from "../lib/syncCommandKernel";
 
 export default function RemoveCMSResource(name: string) {
   const filePath = join(
     process.cwd(),
-    `./app/Console/Commands/${name}Command.ts`,
+    `./app/Cms/${name}CmsResource.ts`,
   );
   if (!fs.existsSync(filePath)) {
-    throw new Error(chalk.redBright("Command does not exist"));
+    throw new Error(chalk.redBright("CMS Resource does not exist"));
   }
-  console.log("Removing command:", chalk.bold(chalk.yellowBright(name)));
+  console.log("Removing CMS resource:", chalk.bold(chalk.yellowBright(name)));
   fs.rmSync(filePath);
   console.log(
-    `Command: ${chalk.bold(chalk.yellowBright(name))} removed at: ${chalk.bold(chalk.redBright(filePath))}`,
+    `CMS Resource: ${chalk.bold(chalk.yellowBright(name))} removed at: ${chalk.bold(chalk.redBright(filePath))}`,
   );
-  SyncCommandKernel();
 }

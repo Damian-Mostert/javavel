@@ -13,7 +13,11 @@ export default function MakeJob(name: string) {
     `import { Job } from "@/vendor/job";
 
 export default class ${name}Job extends Job {
-  async handle(...args: any[]) {
+  constructor() {
+    super();
+  }
+
+  async handle(): Promise<void> {
     // Job logic here
   }
 }`,
