@@ -1,5 +1,6 @@
 import { HttpKernel } from "@/vendor/kernel";
 import authController from "./Controllers/authController.ts";
+import testController from "./Controllers/testController.ts";
 import authMiddleware from "./Middleware/authMiddleware.ts";
 
 const Kernel: HttpKernel = {
@@ -11,7 +12,8 @@ const Kernel: HttpKernel = {
     auth: new authMiddleware()
   },
   controllers: {
-    authController: new authController()
+    authController: new authController(),
+    testController: new testController()
   },
 };
 

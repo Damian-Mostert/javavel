@@ -2,7 +2,7 @@ import { Route } from "@/http";
 
 
 Route.Group("/v1", function () {
-  this.Route.Get("/test", "controllers/testController@testMethod");
+  this.Route.Get("/test", "controllers/testController@someMethod");
   this.Route.Group("/nested", function () {
     this.Route.Post("/test", "controllers/testController@testMethod");
   });

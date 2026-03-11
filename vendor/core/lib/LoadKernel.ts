@@ -1,4 +1,4 @@
-import commands from "./commands/_index.ts";
+import commands from "../commands/_index.ts";
 const args = process.argv.slice(2);
 import chalk from "chalk";
 
