@@ -2,11 +2,12 @@
   "name": "overreact-demo",
   "type": "module",
   "scripts": {
-    "smith": "node smith.mjs"
+    "solo": "node solo.mjs"
   },
   "dependencies": {
     "chalk": "^5.6.2",
     "dotenv": "^17.3.1",
+    "ejs": "^5.0.1",
     "jsonwebtoken": "^9.0.3",
     "module-alias": "^2.3.4",
     "multer": "^2.1.1",

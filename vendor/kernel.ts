@@ -18,4 +18,5 @@ export type CommandKernel = {
   commands: {
     [key: string]: Command;
   };
+  schedule(Schedule: any): void;
 };

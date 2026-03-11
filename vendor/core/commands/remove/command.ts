@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import fs from "fs";
 import { join } from "path";
-import SyncCommandKernel from "../lib/syncCommandKernel.js";
+import SyncCommandKernel from "../lib/syncCommandKernel";
 
 export default function MakeACommand(name: string) {
   const filePath = join(

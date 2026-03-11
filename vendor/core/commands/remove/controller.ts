@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import fs from "fs";
 import { join } from "path";
-import SyncHttpKernel from "../lib/syncHttpKernel.js";
+import SyncHttpKernel from "../lib/syncHttpKernel";
 
 export default function MakeController(name: string) {
   const filePath = join(
