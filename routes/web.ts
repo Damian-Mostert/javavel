@@ -1,0 +1,17 @@
+import { Route } from "@/http";
+
+Route.Group("/v1", function () {
+  this.Route.Get("/test", "controllers/testController@testMethod");
+  this.Route.Group("/nested", function () {
+    this.Route.Post("/test", "controllers/testController@testMethod");
+  });
+  this.Route.Middleware([], function () {
+    this.Route.Get("/with-mw", "controllers/testController@testMethod");
+  });
+});
+
+Route.Middleware([], function () {
+  this.Route.Get("/no-mw", "controllers/testController@testMethod");
+});
+
+export default Route;

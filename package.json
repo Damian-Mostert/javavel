@@ -1,0 +1,12 @@
+{
+  "type": "module",
+  "scripts": {
+    "smith": "node smith.mjs"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "dotenv": "^17.3.1",
+    "module-alias": "^2.3.4",
+    "ts-node": "^10.9.2"
+  }
+}
