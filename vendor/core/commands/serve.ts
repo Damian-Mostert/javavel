@@ -173,20 +173,33 @@ async function StartServer(args: any) {
     })
     .map((s: any) => join(process.cwd(), "./app/Client", s.toString()));
 
+  const vendorClientFiles = readdirSync(join(process.cwd(), "./vendor/client"), {
+    recursive: true,
+  })
+    .filter((file: any) => {
+      const ext = file.toString().split(".").pop();
+      return ["js", "jsx", "ts", "tsx", "css", "scss", "sass"].includes(
+        ext || "",
+      );
+    })
+    .map((s: any) => join(process.cwd(), "./vendor/client", s.toString()));
+
   await esbuild.build({
     entryPoints: [
       ...clientFiles,
+      ...vendorClientFiles,
       join(process.cwd(), "./vendor/html/cms.tsx"),
       join(process.cwd(), "./vendor/html/debugger.tsx"),
       join(process.cwd(), "./vendor/html/bootstrap.tsx"),
     ],
     bundle: true,
     outdir: buildDir,
+    outbase: process.cwd(),
     sourcemap: true,
     minify: false,
     platform: "browser",
     format: "esm",
-    external: ["react", "react-dom"],
+    external: ["react", "react-dom", "lucide-react"],
     loader: {
       ".js": "jsx",
       ".ts": "tsx",
@@ -306,17 +319,22 @@ async function StartServer(args: any) {
 
   // Set up EJS template engine
   app.set("view engine", "ejs");
-  app.set("views", join(process.cwd(), "app/Mail/templates"));
+  app.set("views", [
+    join(process.cwd(), "app/Mail/templates"),
+    join(process.cwd(), "vendor/html")
+  ]);
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.get("/_overreact/core.css", (_: never, res: any) => {
     res.sendFile(join(process.cwd(), "./vendor/html/core.css"));
   });
-  app.use(
-    "/_overreact/",
-    express.static(join(process.cwd(), "./vendor/.build/")),
-  );
+  app.use("/_overreact/", express.static(join(process.cwd(), "./vendor/.build/")));
+
+  // Error page route
+  app.get("/_overreact_error", (_: any, res: any) => {
+    res.status(500).render("error", { process: { env: process.env } });
+  });
 
   app.use(upload.any());
   app.use(express.static("public"));
@@ -401,7 +419,7 @@ async function StartServer(args: any) {
   }
 
   app.use((_: any, res: any) => {
-    res.status(404).sendFile(join(process.cwd(), "./vendor/html/404.html"));
+    res.status(404).render("404", { process: { env: process.env } });
   });
 
   const port = process.env.SERVER_PORT ?? 3000;
@@ -462,8 +480,11 @@ const ServeCommand: Command = {
   aliases: ["serve"],
   description: "Starts a local development server",
   handler(args) {
+    const isDevMode = args[0] === "dev";
+    process.env.DEV_MODE = isDevMode ? "true" : "false";
+    
     StartServer(args);
-    if (args[0] == "dev") {
+    if (isDevMode) {
       banner("Warning! Started server in dev mode. Watching for changes... ");
       watch(join(process.cwd(), ".env"), {}, handleRestart(args));
       watch(

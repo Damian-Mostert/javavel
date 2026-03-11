@@ -1,6 +1,7 @@
 import Button from "../components/button";
 
 export default function Home() {
+  //x;
   return (
     <div className="min-h-screen">
       <section className="container mx-auto px-4 py-20 text-center">

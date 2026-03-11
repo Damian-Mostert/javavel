@@ -10,7 +10,8 @@
         "react": "https://esm.sh/react@19.2.4",
         "react-dom": "https://esm.sh/react-dom@19.2.4",
         "react-dom/client": "https://esm.sh/react-dom@19.2.4/client",
-        "react/jsx-runtime": "https://esm.sh/react@19.2.4/jsx-runtime"
+        "react/jsx-runtime": "https://esm.sh/react@19.2.4/jsx-runtime",
+        "lucide-react": "https://esm.sh/lucide-react@0.468.0"
       }
     }
   </script>
@@ -20,7 +21,8 @@
     window.__RENDER_CONFIG__ = {
       layout: <%- layout ? `"${layout}"` : 'null' %>,
       page: "<%- page %>",
-      props: <%- JSON.stringify(props || {}) %>
+      props: <%- JSON.stringify(props || {}) %>,
+      devMode: <%= process.env.DEV_MODE === 'true' ? 'true' : 'false' %>
     };
   </script>
   <script type="module" src="/_overreact/vendor/html/bootstrap.js"></script>
