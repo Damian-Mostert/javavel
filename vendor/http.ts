@@ -75,24 +75,123 @@ export type MiddlewareAction<
 
 export type Action = ControllerAction;
 
-export interface RouteApi {
-  Get(path: RoutePath, handler: ControllerAction | Callback): void;
-  Post(path: RoutePath, handler: ControllerAction | Callback): void;
+export class RouteApi {
+  private routes: any[] = [];
+  private currentPrefix: string = "";
+  private currentMiddleware: string[] = [];
+
+  Get(path: RoutePath, handler: ControllerAction | Callback): void {
+    this.addRoute("GET", path, handler);
+  }
+
+  Post(path: RoutePath, handler: ControllerAction | Callback): void {
+    this.addRoute("POST", path, handler);
+  }
+
+  Put(path: RoutePath, handler: ControllerAction | Callback): void {
+    this.addRoute("PUT", path, handler);
+  }
+
+  Patch(path: RoutePath, handler: ControllerAction | Callback): void {
+    this.addRoute("PATCH", path, handler);
+  }
+
+  Delete(path: RoutePath, handler: ControllerAction | Callback): void {
+    this.addRoute("DELETE", path, handler);
+  }
+
+  Options(path: RoutePath, handler: ControllerAction | Callback): void {
+    this.addRoute("OPTIONS", path, handler);
+  }
+
+  Head(path: RoutePath, handler: ControllerAction | Callback): void {
+    this.addRoute("HEAD", path, handler);
+  }
+
+  Any(path: RoutePath, handler: ControllerAction | Callback): void {
+    ["GET", "POST", "PUT", "PATCH", "DELETE"].forEach((method) => {
+      this.addRoute(method, path, handler);
+    });
+  }
+
   Group(
     prefix: RoutePath,
     callbackOrMiddleware:
       | ((this: { Route: RouteApi }) => void)
       | (string | string[]),
     callbackIfMiddleware?: (this: { Route: RouteApi }) => void,
-  ): void;
+  ): void {
+    const previousPrefix = this.currentPrefix;
+    this.currentPrefix += prefix;
+
+    if (typeof callbackOrMiddleware === "function") {
+      callbackOrMiddleware.call({ Route: this });
+    } else {
+      const middleware = Array.isArray(callbackOrMiddleware)
+        ? callbackOrMiddleware
+        : [callbackOrMiddleware];
+      const previousMiddleware = this.currentMiddleware;
+      this.currentMiddleware = [...this.currentMiddleware, ...middleware];
+      callbackIfMiddleware?.call({ Route: this });
+      this.currentMiddleware = previousMiddleware;
+    }
+
+    this.currentPrefix = previousPrefix;
+  }
 
   Middleware(
-    middleware: MiddlewareAction | MiddlewareAction[],
+    middleware: string | string[],
     callback: (this: { Route: RouteApi }) => void,
-  ): void;
+  ): void {
+    const previousMiddleware = this.currentMiddleware;
+    const mw = Array.isArray(middleware) ? middleware : [middleware];
+    this.currentMiddleware = [...this.currentMiddleware, ...mw];
+    callback.call({ Route: this });
+    this.currentMiddleware = previousMiddleware;
+  }
+
+  private addRoute(
+    method: string,
+    path: RoutePath,
+    handler: ControllerAction | Callback,
+  ): void {
+    const fullPath = this.currentPrefix + path;
+    const regex = this.pathToRegex(fullPath);
+    
+    this.routes.push({
+      method,
+      path: fullPath,
+      regex,
+      handler,
+      middleware: [...this.currentMiddleware],
+    });
+  }
+
+  private pathToRegex(path: string): RegExp {
+    const pattern = path
+      .replace(/\{([^}]+)\}/g, "(?<$1>[^/]+)")
+      .replace(/\//g, "\\/");
+    return new RegExp(`^${pattern}$`);
+  }
+
+  match(method: string, path: string): any {
+    return this.routes.find(
+      (route) =>
+        route.method === method.toUpperCase() && route.regex.test(path),
+    );
+  }
+
+  extractParams(path: string, route: any): Record<string, string> {
+    const match = path.match(route.regex);
+    return match?.groups || {};
+  }
+
+  getRoutes() {
+    return this.routes;
+  }
 }
 
-export var Route: RouteApi;
+export const Route = new RouteApi();
 
 export abstract class Controller<Keys extends string = string> {
   use?: string[];

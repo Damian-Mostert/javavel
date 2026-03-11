@@ -1,11 +1,6 @@
-import { fork } from "node:child_process";
+import { spawn } from "node:child_process";
 
-const child = fork("./vendor/core/kernel.ts", process.argv.slice(2), {
-  execArgv: ["--loader", "ts-node/esm", "--no-warnings=ExperimentalWarning"],
+const child = spawn("npx", ["tsx", "./vendor/core/kernel.ts", ...process.argv.slice(2)], {
   stdio: "inherit",
-  env: {
-    ...process.env,
-    TS_NODE_PROJECT: "./tsconfig.json",
-    TS_NODE_TRANSPILE_ONLY: "true",
-  },
+  env: process.env,
 });
