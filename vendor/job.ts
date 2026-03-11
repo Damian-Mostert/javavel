@@ -27,10 +27,14 @@ export abstract class Job implements ShouldQueue {
   }
 
   static dispatchSync<T extends Job>(this: new () => T): Promise<void> {
+    //@ts-ignore
     return this.dispatch();
   }
 
-  static dispatchAfter<T extends Job>(this: new () => T, delay: number): Promise<void> {
+  static dispatchAfter<T extends Job>(
+    this: new () => T,
+    delay: number,
+  ): Promise<void> {
     const job = new this();
     job.delay = delay;
     return new Promise((resolve) => {
@@ -56,6 +60,6 @@ export abstract class Job implements ShouldQueue {
   }
 
   failed(error: Error): void {
-    console.error('Job failed:', error);
+    console.error("Job failed:", error);
   }
 }
