@@ -3,7 +3,7 @@ import fs from "fs";
 import { join } from "path";
 import SyncHttpKernel from "../lib/syncHttpKernel";
 
-export default function MakeController(name: string) {
+export default function RemoveController(name: string) {
   const filePath = join(
     process.cwd(),
     `./app/Http/Controllers/${name}Controller.ts`,

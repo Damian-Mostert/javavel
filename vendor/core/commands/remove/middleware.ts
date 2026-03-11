@@ -3,8 +3,11 @@ import fs from "fs";
 import { join } from "path";
 import SyncHttpKernel from "../lib/syncHttpKernel";
 
-export default function MakeMiddleware(name: string) {
-  const filePath = join(process.cwd(), `./app/Http/Middleware/${name}Middleware.ts`);
+export default function RemoveMiddleware(name: string) {
+  const filePath = join(
+    process.cwd(),
+    `./app/Http/Middleware/${name}Middleware.ts`,
+  );
   if (!fs.existsSync(filePath)) {
     throw new Error(chalk.redBright("Middleware does not exists"));
   }

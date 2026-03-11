@@ -12,54 +12,156 @@ import { configDotenv } from "dotenv";
 import { watch, WatchEventType } from "fs";
 import debuggerRouter from "./serve/debugger/router";
 import cmsRouter from "./serve/cms/router";
+import { Req, Res } from "@/vendor/http";
+//@ts-ignore
+import multer from "multer";
 
-const app = express();
-const httpServer = createServer(app);
-const io = new Server(httpServer);
+const banner = (m: string) =>
+  console.warn(chalk.bold(chalk.bgYellowBright(chalk.blackBright(m))));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static("public"));
-app.use(express.static("./out/public"));
-app.use(debuggerRouter);
-app.use(cmsRouter);
+var SERVER: ReturnType<typeof createServer> | null = null;
+var restartTimeout: NodeJS.Timeout | null = null;
+var isRestarting = false;
 
-async function StartServer() {
+function convertToReq(expressReq: any): Req {
+  return {
+    method: expressReq.method,
+    url: expressReq.url,
+    body: expressReq.body || {},
+    query: expressReq.query || {},
+    params: expressReq.params || {},
+    headers: expressReq.headers || {},
+    input: function (key) {
+      return this.body[key];
+    },
+    all: function () {
+      return this.body;
+    },
+    only: function (keys) {
+      const result: any = {};
+      keys.forEach((k) => (result[k] = this.body[k]));
+      return result;
+    },
+    except: function (keys) {
+      const result = { ...this.body };
+      keys.forEach((k) => delete result[k]);
+      return result;
+    },
+    has: function (key) {
+      return key in this.body;
+    },
+    filled: function (key) {
+      return !!this.body[key];
+    },
+    queryParam: function (key) {
+      return this.query[key];
+    },
+    param: function (key) {
+      return this.params[key];
+    },
+    validate: function (schema) {
+      return this.body;
+    },
+    user: expressReq.user,
+    files: expressReq.files,
+    ip: expressReq.ip,
+  };
+}
+
+function convertToRes(expressRes: any): Res {
+  return {
+    status: function (code) {
+      expressRes.status(code);
+      return this;
+    },
+    json: function (data) {
+      expressRes.json(data);
+      return data;
+    },
+    text: function (data) {
+      expressRes.send(data);
+      return data;
+    },
+    html: function (html) {
+      expressRes.send(html);
+      return html;
+    },
+    render: function (layout, page, props) {
+      // TODO: Implement render
+      return "";
+    },
+    headers: function (headers) {
+      Object.entries(headers).forEach(([k, v]) => expressRes.setHeader(k, v));
+      return this;
+    },
+    header: function (key, value) {
+      expressRes.setHeader(key, value);
+      return this;
+    },
+    redirect: function (url, status) {
+      expressRes.redirect(status || 302, url);
+    },
+    cookie: function (name, value, options) {
+      expressRes.cookie(name, value, options);
+      return this;
+    },
+    clearCookie: function (name) {
+      expressRes.clearCookie(name);
+      return this;
+    },
+    download: function (path, filename) {
+      expressRes.download(path, filename);
+    },
+    send: function (data) {
+      expressRes.send(data);
+    },
+  };
+}
+
+async function StartServer(args: any) {
   configDotenv({
     path: join(process.cwd(), ".env"),
     processEnv: process.env,
     debug: false,
     quiet: true,
   });
-  const { HttpKernel, CommandKernel } = LoadEnviroment();
+
+  (global as any).env = (key: string, def?: string) => process.env[key] || def;
+
+  const StorageConfig = (await import("@/config/storage")).default;
+  const storage = multer.diskStorage({
+    //@ts-ignore
+    destination: (req, file, cb) => {
+      const disk = StorageConfig.disks[StorageConfig.default];
+      cb(null, join(process.cwd(), disk.root));
+    },
+    //@ts-ignore
+    filename: (req, file, cb) => {
+      cb(null, `${Date.now()}-${file.originalname}`);
+    },
+  });
+  const upload = multer({ storage });
+
+  const app = express();
+  const httpServer = createServer(app);
+  const io = new Server(httpServer);
+
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use(upload.any());
+  app.use(express.static("public"));
+  app.get("/_overreact/core.css", (_: never, res: any) => {
+    res.sendFile(join(process.cwd(), "./vendor/html/core.css"));
+  });
+  app.use(express.static("./out/public"));
+  app.use(debuggerRouter);
+  app.use(cmsRouter);
+
+  const { HttpKernel, CommandKernel } = await LoadEnviroment();
   const routes = Route.getRoutes();
 
-  const controllers: Record<string, any> = {};
-  const middleware: Record<string, any> = {};
-
-  // Load controllers
-  const controllerFiles = await readdir("app/Http/Controllers");
-  for (const file of controllerFiles) {
-    if (file.endsWith(".ts")) {
-      const name = file.replace(".ts", "");
-      const module = await import(
-        join(process.cwd(), "app/Http/Controllers", file)
-      );
-      controllers[name] = new module.default();
-    }
-  }
-
-  // Load middleware
-  const middlewareFiles = await readdir("app/Http/Middleware");
-  for (const file of middlewareFiles) {
-    if (file.endsWith(".ts")) {
-      const name = file.replace(".ts", "");
-      const module = await import(
-        join(process.cwd(), "app/Http/Middleware", file)
-      );
-      middleware[name] = new module.default();
-    }
-  }
+  const controllers = HttpKernel.controllers;
+  const middleware = HttpKernel.routeMiddleware;
 
   io.on("connection", (socket) => {});
 
@@ -68,77 +170,151 @@ async function StartServer() {
     const method = route.method.toLowerCase();
     const path = route.path;
 
-    app[method](path, async (req: any, res: any) => {
+    app[method](path, async (expressReq: any, expressRes: any) => {
       try {
         // Extract route params
-        const params = Route.extractParams(req.path, route);
-        req.params = params;
+        const params = Route.extractParams(expressReq.path, route);
+        expressReq.params = params;
 
-        // Execute middleware
-        for (const mw of route.middleware) {
-          const [, middlewareName] = mw.split("/");
-          if (middleware[middlewareName]) {
-            await middleware[middlewareName].callback(req, res);
-            if (res.headersSent) return;
+        // Process uploaded files
+        if (expressReq.files) {
+          const filesObj: Record<string, any> = {};
+          for (const file of expressReq.files) {
+            filesObj[file.fieldname] = {
+              filename: file.filename,
+              originalname: file.originalname,
+              path: file.path,
+              size: file.size,
+              mimetype: file.mimetype,
+            };
           }
+          expressReq.files = filesObj;
         }
 
-        // Execute handler
-        if (typeof route.handler === "function") {
-          await route.handler(req, res);
-        } else {
-          const [controllerPath, methodName] = route.handler.split("@");
-          const controllerName = controllerPath.split("/")[1];
-          const controller = controllers[controllerName];
+        const req = convertToReq(expressReq);
+        const res = convertToRes(expressRes);
 
-          if (controller && controller[methodName]) {
-            await controller[methodName](req, res);
+        let currentIndex = 0;
+        const middlewareList = route.middleware;
+
+        const executeNext = async (): Promise<void> => {
+          if (currentIndex < middlewareList.length) {
+            const mw = middlewareList[currentIndex++];
+            const [, middlewareName] = mw.split("/");
+            if (middleware[middlewareName]) {
+              await middleware[middlewareName].callback(req, res, executeNext);
+            } else {
+              await executeNext();
+            }
           } else {
-            res.status(404).json({ error: "Handler not found" });
+            // Execute handler after all middleware
+            if (typeof route.handler === "function") {
+              await route.handler(req, res);
+            } else {
+              const [controllerPath, methodName] = route.handler.split("@");
+              const controllerName = controllerPath.split("/")[1];
+              const controller = controllers[controllerName];
+
+              if (controller && controller[methodName]) {
+                await controller[methodName](req, res);
+              } else {
+                res.status(404).json({ error: "Handler not found" });
+              }
+            }
           }
-        }
+        };
+
+        await executeNext();
       } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Internal server error" });
+        expressRes
+          .status(500)
+          .sendFile(join(process.cwd(), "./vendor/html/error.html"));
       }
     });
   }
 
-  httpServer.listen(3000, () => {
+  app.use((_: any, res: any) => {
+    res.status(404).sendFile(join(process.cwd(), "./vendor/html/404.html"));
+  });
+
+  const port = process.env.SERVER_PORT ?? 3000;
+
+  SERVER = httpServer.listen(port, () => {
     console.log(
-      `Server running on ${chalk.magentaBright(chalk.bold("http://localhost:3000"))}`,
+      `Server running on ${chalk.magentaBright(chalk.bold("http://localhost:" + port))}`,
     );
-    console.log(`\nRegistered routes:`);
-    routes.forEach((route: any) => {
-      console.log(`  ${chalk.cyan(route.method.padEnd(7))} ${route.path}`);
-    });
   });
 }
 
-async function RestartServer() {
+async function RestartServer(args: any) {
+  if (isRestarting) return;
+  isRestarting = true;
+
   configDotenv({
     path: join(process.cwd(), ".env"),
     processEnv: process.env,
     debug: false,
     quiet: true,
   });
+
+  if (SERVER) {
+    // Force close all connections
+    SERVER.closeAllConnections();
+
+    await Promise.race([
+      new Promise<void>((resolve) => {
+        SERVER!.close(() => {
+          banner("Server closed");
+          resolve();
+        });
+      }),
+      new Promise<void>((resolve) => setTimeout(resolve, 500)), // 500ms timeout
+    ]);
+  }
+
+  await StartServer(args);
+  isRestarting = false;
 }
 
-const handleRestart = async (e: WatchEventType, f: string | null) => {
-  console.log(e, f);
-  RestartServer();
-};
+const handleRestart =
+  (args: any) => async (e: WatchEventType, f: string | null) => {
+    // Debounce restarts to prevent multiple rapid restarts
+    if (restartTimeout) {
+      clearTimeout(restartTimeout);
+    }
+    restartTimeout = setTimeout(() => {
+      banner(
+        `Picked up on a "${e}" event on file "${f}". Restarting server...`,
+      );
+      RestartServer(args);
+      restartTimeout = null;
+    }, 100);
+  };
 
 const ServeCommand: Command = {
   aliases: ["serve"],
   description: "Starts a local development server",
   handler(args) {
-    StartServer();
+    StartServer(args);
     if (args[0] == "dev") {
-      watch(join(process.cwd(), ".env"), {}, handleRestart);
-      watch(join(process.cwd(), "app/"), { recursive: true }, handleRestart);
-      watch(join(process.cwd(), "config/"), { recursive: true }, handleRestart);
-      watch(join(process.cwd(), "routes/"), { recursive: true }, handleRestart);
+      banner("Warning! Started server in dev mode. Watching for changes... ");
+      watch(join(process.cwd(), ".env"), {}, handleRestart(args));
+      watch(
+        join(process.cwd(), "app/"),
+        { recursive: true },
+        handleRestart(args),
+      );
+      watch(
+        join(process.cwd(), "config/"),
+        { recursive: true },
+        handleRestart(args),
+      );
+      watch(
+        join(process.cwd(), "routes/"),
+        { recursive: true },
+        handleRestart(args),
+      );
     }
   },
 };

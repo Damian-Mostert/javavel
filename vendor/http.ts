@@ -30,7 +30,7 @@ export type Req<TBody = any, TParams = any, TQuery = any> = {
 };
 export type Res = {
   status(code: number): Res;
-  json<T = any>(data?: T): T;
+  json(data?: any): Res;
   text(data: string): string;
   html(html: string): string;
   render(

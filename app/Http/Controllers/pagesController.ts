@@ -15,21 +15,22 @@ export default class pagesController extends Controller {
       },
     });
   }
-  async homePage(req: Req, res: Res) {
+  async home(req: Req, res: Res) {
+    return res.send("HELLO WORLD")
     return res.render("default", "home", {
       metadata: {
         title: "Home",
       },
     });
   }
-  async loginPage(req: Req, res: Res) {
+  async login(req: Req, res: Res) {
     return res.render("auth", "login", {
       metadata: {
         title: "Login",
       },
     });
   }
-  async registerPage(req: Req, res: Res) {
+  async register(req: Req, res: Res) {
     return res.render("auth", "register", {
       metadata: {
         title: "Register",

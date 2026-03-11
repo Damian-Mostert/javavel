@@ -2,7 +2,7 @@ import commands from "../commands/_index.ts";
 const args = process.argv.slice(2);
 import chalk from "chalk";
 
-declare global {}
+(global as any).env = (key: string, def?: string) => process.env[key] || def;
 
 if (args[0]) {
   const command =

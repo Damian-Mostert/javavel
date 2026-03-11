@@ -43,6 +43,14 @@ const RemoveCommand: Command = {
         this.checkName(args);
         (await import(`./remove/command.ts`)).default(args[1]);
         break;
+      case "mail":
+        this.checkName(args);
+        (await import(`./remove/mail.ts`)).default(args[1]);
+        break;
+      case "cms-resource":
+        this.checkName(args);
+        (await import(`./remove/cms-resource.ts`)).default(args[1]);
+        break;
       default:
         throw new Error(`Cant make a "${args[0]}"`);
     }

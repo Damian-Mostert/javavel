@@ -47,6 +47,14 @@ const MakeCommand: Command = {
         this.checkName(args);
         (await import(`./make/command.ts`)).default(args[1]);
         break;
+      case "mail":
+        this.checkName(args);
+        (await import(`./make/mail.ts`)).default(args[1]);
+        break;
+      case "cms-resource":
+        this.checkName(args);
+        (await import(`./make/cms-resource.ts`)).default(args[1]);
+        break;
       default:
         throw new Error(`Cant make a "${args[0]}"`);
     }

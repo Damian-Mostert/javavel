@@ -1,7 +1,8 @@
 import { CommandKernel } from "@/vendor/kernel.ts";
+import testCommand from "./Commands/testCommand.ts";
 
 const Kernel: CommandKernel = {
-  commands: {},
+  commands: { testCommand: testCommand },
   schedule(schedule) {
     schedule.command("telescope:prune").daily();
     schedule.command("api:products").hourly();

@@ -3,7 +3,7 @@ import fs from "fs";
 import { join } from "path";
 import SyncCommandKernel from "../lib/syncCommandKernel";
 
-export default function RemoveCommand(name: string) {
+export default function RemoveCMSResource(name: string) {
   const filePath = join(
     process.cwd(),
     `./app/Console/Commands/${name}Command.ts`,
