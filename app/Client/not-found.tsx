@@ -1,3 +1,4 @@
+import "./styles/global.scss";
 export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
@@ -7,7 +8,10 @@ export default function NotFound() {
         <p className="text-gray-400 mb-8 max-w-md">
           The page you're looking for doesn't exist or has been moved.
         </p>
-        <a href="/" className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded transition inline-block">
+        <a
+          href="/"
+          className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded transition inline-block"
+        >
           Go Home
         </a>
       </div>
