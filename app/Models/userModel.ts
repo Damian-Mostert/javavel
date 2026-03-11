@@ -1,5 +1,5 @@
 import { Model } from "@/vendor/db";
-export default class User extends Model<user> {
+export default class userModel extends Model<user> {
   protected = ["id", "password"];
   table = "users";
   schema = {
@@ -15,4 +15,3 @@ export default class User extends Model<user> {
     email: "string",
   };
 }
-

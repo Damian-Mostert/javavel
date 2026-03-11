@@ -7,6 +7,7 @@ import MakeCommand from "./make.ts";
 import RemoveCommand from "./remove.ts";
 
 import KernelCommands from "../../../app/Console/Kernel.ts";
+import UpdateCommand from "./update.ts";
 
 export default {
   ...KernelCommands.commands,
@@ -17,4 +18,5 @@ export default {
   help: HelpCommand,
   make: MakeCommand,
   remove: RemoveCommand,
+  update: UpdateCommand,
 };
