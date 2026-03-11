@@ -1,3 +1,5 @@
-const ClientConfig: Config = {};
+const ClientConfig: ClientConfig = {
+  appName: "Overreact demo",
+};
 
 export default ClientConfig;

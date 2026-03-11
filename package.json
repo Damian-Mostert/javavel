@@ -7,12 +7,15 @@
   "dependencies": {
     "chalk": "^5.6.2",
     "dotenv": "^17.3.1",
+    "jsonwebtoken": "^9.0.3",
     "module-alias": "^2.3.4",
+    "multer": "^2.1.1",
     "react": "^19.2.4",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/react": "^19.2.14"
   }
 }

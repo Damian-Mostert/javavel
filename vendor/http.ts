@@ -33,6 +33,19 @@ export type Res = {
   json<T = any>(data?: T): T;
   text(data: string): string;
   html(html: string): string;
+  render(
+    layout: string,
+    page: string,
+    props: {
+      metadata: {
+        title?: string;
+        description?: string;
+        favicon?: string;
+        viewport?: string;
+      };
+      [key: string]: any;
+    },
+  ): string;
   headers(headers: Record<string, string>): Res;
   header(key: string, value: string): Res;
   redirect(url: string, status?: number): void;
@@ -52,11 +65,7 @@ export type Res = {
   send(data?: any): void;
 };
 
-export type Callback = (
-  req: Req,
-  res: Res,
-  next?: () => void,
-) => Promise<void> | void;
+export type Callback = (req: Req, res: Res, next?: () => void) => any;
 
 export type DotPath = string;
 export type RoutePath = `/${string}`;
@@ -157,7 +166,7 @@ export class RouteApi {
   ): void {
     const fullPath = this.currentPrefix + path;
     const regex = this.pathToRegex(fullPath);
-    
+
     this.routes.push({
       method,
       path: fullPath,
@@ -194,7 +203,6 @@ export class RouteApi {
 export const Route = new RouteApi();
 
 export abstract class Controller<Keys extends string = string> {
-  use?: string[];
   //@ts-ignore
   [key: Keys]: Callback | any;
 }
@@ -203,9 +211,5 @@ export abstract class Middleware {
   use?: string[];
   //@ts-ignore
   name: string;
-  abstract callback(
-    req: Req,
-    res: Res,
-    next?: () => void,
-  ): Promise<void> | void;
+  abstract callback(req: Req, res: Res, next?: () => void): any;
 }
