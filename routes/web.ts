@@ -4,8 +4,6 @@ Route.Get("/", "controllers/pagesController@home");
 Route.Get("/login", "controllers/pagesController@login");
 Route.Get("/register", "controllers/pagesController@register");
 Route.Get("/forgot-password", "controllers/pagesController@forgotPassword");
-Route.Get("/error", "controllers/pagesController@error");
-Route.Get("/not-found", "controllers/pagesController@notFound");
 
 Route.Group("/api", function () {
   this.Route.Post("/login", "controllers/authController@login");

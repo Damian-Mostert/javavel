@@ -1,6 +1,12 @@
-export default function Button({ children }: { children: React.ReactNode }) {
+export default function Button({ children, variant = "primary", type = "button", onClick }: { children: React.ReactNode; variant?: "primary" | "secondary" | "outline"; type?: "button" | "submit"; onClick?: () => void }) {
+  const variants = {
+    primary: "bg-orange-500 hover:bg-orange-600 text-white",
+    secondary: "bg-gray-700 hover:bg-gray-600 text-white",
+    outline: "border-2 border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white"
+  };
+  
   return (
-    <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+    <button type={type} onClick={onClick} className={`${variants[variant]} font-bold py-2 px-6 rounded transition`}>
       {children}
     </button>
   );

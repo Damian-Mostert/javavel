@@ -186,6 +186,7 @@ async function StartServer(args: any) {
     minify: false,
     platform: "browser",
     format: "esm",
+    external: ["react", "react-dom"],
     loader: {
       ".js": "jsx",
       ".ts": "tsx",

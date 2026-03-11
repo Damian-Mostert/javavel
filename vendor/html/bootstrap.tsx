@@ -1,6 +1,9 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 
+// Make React available globally
+window.React = React;
+
 async function bootstrap() {
   //@ts-ignore
   const { layout, page, props } = window.__RENDER_CONFIG__;

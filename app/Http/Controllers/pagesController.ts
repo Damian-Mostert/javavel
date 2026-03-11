@@ -1,20 +1,6 @@
 import { Controller, Req, Res } from "@/vendor/http";
 
 export default class pagesController extends Controller {
-  async notFound(req: Req, res: Res) {
-    return res.render("default", "register", {
-      metadata: {
-        title: "404 Page not found",
-      },
-    });
-  }
-  async error(req: Req, res: Res) {
-    return res.render("default", "error", {
-      metadata: {
-        title: "Register",
-      },
-    });
-  }
   async home(req: Req, res: Res) {
     return res.render("default", "home", {
       metadata: {
@@ -33,6 +19,13 @@ export default class pagesController extends Controller {
     return res.render("auth", "register", {
       metadata: {
         title: "Register",
+      },
+    });
+  }
+  async forgotPassword(req: Req, res: Res) {
+    return res.render("auth", "forgot-password", {
+      metadata: {
+        title: "Forgot Password",
       },
     });
   }
