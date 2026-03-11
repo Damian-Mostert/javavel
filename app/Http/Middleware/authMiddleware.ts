@@ -1,7 +1,7 @@
 import { Middleware, Req, Res } from "@/vendor/http";
 
 export default class authMiddleware extends Middleware {
-  use = [];
+  name = "auth";
   async callback(req: Req, res: Res, next: () => void) {
     if (req.user) {
       return next();

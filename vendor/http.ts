@@ -208,7 +208,6 @@ export abstract class Controller<Keys extends string = string> {
 }
 
 export abstract class Middleware {
-  use?: string[];
   //@ts-ignore
   name: string;
   abstract callback(req: Req, res: Res, next?: () => void): any;

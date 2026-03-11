@@ -17,7 +17,7 @@ export default function MakeMiddleware(name: string) {
     `import { Middleware, Req, Res } from "@/vendor/http";
     
 export default class ${name}Middleware extends Middleware {
-  use = [];
+  name = "${name}"
   async callback(req: Req, res: Res, next?: () => void) {
     return next();
   }
