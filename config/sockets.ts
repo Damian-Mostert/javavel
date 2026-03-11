@@ -1,8 +1,8 @@
 const SocketsConfig: SocketsConfig = {
-  enabled: env("SOCKETS_ENABLED") || true,
-  port: env("SOCKETS_PORT") || 3001,
+  enabled: env("SOCKETS_ENABLED", true),
+  port: env("SOCKETS_PORT", 3001),
   cors: {
-    origin: env("SOCKETS_CORS_ORIGIN") || "*",
+    origin: env("SOCKETS_CORS_ORIGIN", "*"),
     credentials: true,
   },
   async authenticate() {

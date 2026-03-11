@@ -1,5 +1,5 @@
 const StorageConfig: StorageConfig = {
-  default: env("STORAGE_DRIVER") || "local",
+  default: env("STORAGE_DRIVER", "local"),
   disks: {
     local: {
       driver: "local",

@@ -98,8 +98,9 @@ declare global {
   };
   function config(
     path: DotPath,
+    fallback?: any,
   ): string | number | boolean | Record<string, any> | null;
-  function env(key: string): any;
+  function env(key: string, fallback?: any): any;
   function redirect(url: string): Promise<any>;
 
   type ValidatorString =

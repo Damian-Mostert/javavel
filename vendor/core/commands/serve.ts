@@ -129,6 +129,8 @@ async function StartServer(args: any) {
   (global as any).env = (key: string, def?: string) => process.env[key] || def;
 
   const StorageConfig = (await import("@/config/storage")).default;
+  (global as any).storageConfig = StorageConfig;
+
   const storage = multer.diskStorage({
     //@ts-ignore
     destination: (req, file, cb) => {
