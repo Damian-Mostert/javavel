@@ -16,7 +16,6 @@ export default class pagesController extends Controller {
     });
   }
   async home(req: Req, res: Res) {
-    return res.send("HELLO WORLD")
     return res.render("default", "home", {
       metadata: {
         title: "Home",

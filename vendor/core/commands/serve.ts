@@ -9,12 +9,23 @@ import chalk from "chalk";
 import { readdir } from "fs/promises";
 import { join } from "path";
 import { configDotenv } from "dotenv";
-import { watch, WatchEventType } from "fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  watch,
+  WatchEventType,
+} from "fs";
 import debuggerRouter from "./serve/debugger/router";
 import cmsRouter from "./serve/cms/router";
 import { Req, Res } from "@/vendor/http";
 //@ts-ignore
 import multer from "multer";
+import esbuild from "esbuild";
+import sassPlugin from "esbuild-plugin-sass";
+import tailwindPlugin from "esbuild-plugin-tailwindcss";
 
 const banner = (m: string) =>
   console.warn(chalk.bold(chalk.bgYellowBright(chalk.blackBright(m))));
@@ -87,7 +98,10 @@ function convertToRes(expressRes: any): Res {
       return html;
     },
     render: function (layout, page, props) {
-      // TODO: Implement render
+      expressRes.render(
+        join(process.cwd(), "vendor/html/generic-react-template.ejs"),
+        { layout, page, props },
+      );
       return "";
     },
     headers: function (headers) {
@@ -127,7 +141,78 @@ async function StartServer(args: any) {
   });
 
   (global as any).env = (key: string, def?: string) => process.env[key] || def;
+  const tsConfigPath = join(process.cwd(), "tsconfig.json");
+  const tsConfig = JSON.parse(readFileSync(tsConfigPath, "utf8"));
+  const aliasPaths = tsConfig.compilerOptions?.paths || {};
+  const alias = Object.entries(aliasPaths).reduce(
+    (acc: any, [key, values]: any) => {
+      const aliasKey = key.replace("/*", ""); // Remove '/*' at the end
+      const aliasValue = join(process.cwd(), values[0].replace("/*", "")); // Resolve absolute path
+      acc[aliasKey] = aliasValue;
+      return acc;
+    },
+    {},
+  );
+  const buildDir = join(process.cwd(), "vendor/.build");
+  if (existsSync(buildDir)) {
+    rmSync(buildDir, { recursive: true, force: true });
+  }
+  if (existsSync(buildDir)) {
+    mkdirSync(buildDir, { recursive: true });
+  }
+  const clientFiles = readdirSync(join(process.cwd(), "./app/Client"), {
+    recursive: true,
+  })
+    .filter((file: any) => {
+      const ext = file.toString().split(".").pop();
+      return ["js", "jsx", "ts", "tsx", "css", "scss", "sass"].includes(
+        ext || "",
+      );
+    })
+    .map((s: any) => join(process.cwd(), "./app/Client", s.toString()));
 
+  await esbuild.build({
+    entryPoints: [
+      ...clientFiles,
+      join(process.cwd(), "./vendor/html/cms.tsx"),
+      join(process.cwd(), "./vendor/html/debugger.tsx"),
+      join(process.cwd(), "./vendor/html/bootstrap.tsx"),
+    ], // JS, TS, or CSS/SASS files that import CSS/SASS
+    bundle: true, // Bundle all dependencies (CSS/SASS)
+    outdir: buildDir, // Output directory for bundled files
+    sourcemap: true,
+    minify: false,
+    platform: "browser",
+    format: "esm", // Target browser platform (or change to 'node' for server-side)
+    loader: {
+      ".css": "css", // Treat `.css` files as CSS
+      ".scss": "css", // Treat `.scss` files as CSS (after SASS compilation)
+      ".js": "jsx", // Treat `.js` files as JS (or JSX)
+      ".ts": "ts", // Treat `.ts` files as TypeScript
+      ".tsx": "tsx", // Treat `.tsx` files as TypeScript JSX
+    },
+    plugins: [
+      tailwindPlugin(), // Adds Tailwind CSS support
+      sassPlugin(), // Adds SASS support
+      {
+        name: "css-plugin",
+        setup(build: any) {
+          build.onLoad({ filter: /\.css$/ }, async (args: any) => {
+            const css = readFileSync(args.path, "utf8");
+            return {
+              contents: css, // Output the CSS content
+              loader: "css", // Treat this as CSS content
+            };
+          });
+        },
+      },
+    ],
+    define: {
+      "process.env.NODE_ENV": JSON.stringify("production"), // Suppresses React DevTools message
+    },
+    tsconfig: join(process.cwd(), "./tsconfig.json"),
+    alias,
+  });
   const StorageConfig = (await import("@/config/storage")).default;
   (global as any).storageConfig = StorageConfig;
 
@@ -148,14 +233,22 @@ async function StartServer(args: any) {
   const httpServer = createServer(app);
   const io = new Server(httpServer);
 
+  // Set up EJS template engine
+  app.set("view engine", "ejs");
+  app.set("views", join(process.cwd(), "app/Mail/templates"));
+
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
-  app.use(upload.any());
-  app.use(express.static("public"));
   app.get("/_overreact/core.css", (_: never, res: any) => {
     res.sendFile(join(process.cwd(), "./vendor/html/core.css"));
   });
-  app.use(express.static("./out/public"));
+  app.use(
+    "/_overreact/",
+    express.static(join(process.cwd(), "./vendor/.build/")),
+  );
+
+  app.use(upload.any());
+  app.use(express.static("public"));
   app.use(debuggerRouter);
   app.use(cmsRouter);
 

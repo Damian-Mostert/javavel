@@ -1,9 +1,3 @@
-export function connect() {
-  return;
-}
-export function disconnect() {
-  return;
-}
 export function useChannel(name: string, callback: any) {
   return;
 }
@@ -11,11 +5,12 @@ export function useChannels(...events: { name: string; callback: any }[]) {
   return;
 }
 
+function emit(channel: string, event: string, data: any) {}
+
 const sockets = {
-  connect,
-  disconnect,
   useChannel,
   useChannels,
+  emit,
 };
 
 export default sockets;
