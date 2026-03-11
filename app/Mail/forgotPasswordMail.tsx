@@ -46,3 +46,5 @@ export default class ForgotPasswordMail extends Mail {
   }
 }
 
+console.log(new ForgotPasswordMail().content())
+

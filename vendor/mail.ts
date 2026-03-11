@@ -18,7 +18,7 @@ export abstract class Mail {
 
   abstract envelope(): Envelope;
 
-  abstract content(): JSX.Element;
+  abstract content(): React.JSX.Element;
 
   attachments(): Attachment[] {
     return [];
