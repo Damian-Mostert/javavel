@@ -24,8 +24,9 @@ import { Req, Res } from "@/vendor/http";
 //@ts-ignore
 import multer from "multer";
 import esbuild from "esbuild";
-import sassPlugin from "esbuild-plugin-sass";
-import tailwindPlugin from "esbuild-plugin-tailwindcss";
+import postcss from 'postcss';
+import tailwindcss from '@tailwindcss/postcss';
+import autoprefixer from 'autoprefixer';
 
 const banner = (m: string) =>
   console.warn(chalk.bold(chalk.bgYellowBright(chalk.blackBright(m))));
@@ -177,38 +178,100 @@ async function StartServer(args: any) {
       join(process.cwd(), "./vendor/html/cms.tsx"),
       join(process.cwd(), "./vendor/html/debugger.tsx"),
       join(process.cwd(), "./vendor/html/bootstrap.tsx"),
-    ], // JS, TS, or CSS/SASS files that import CSS/SASS
-    bundle: true, // Bundle all dependencies (CSS/SASS)
-    outdir: buildDir, // Output directory for bundled files
+    ],
+    bundle: true,
+    outdir: buildDir,
     sourcemap: true,
     minify: false,
     platform: "browser",
-    format: "esm", // Target browser platform (or change to 'node' for server-side)
+    format: "esm",
     loader: {
-      ".css": "css", // Treat `.css` files as CSS
-      ".scss": "css", // Treat `.scss` files as CSS (after SASS compilation)
-      ".js": "jsx", // Treat `.js` files as JS (or JSX)
-      ".ts": "ts", // Treat `.ts` files as TypeScript
-      ".tsx": "tsx", // Treat `.tsx` files as TypeScript JSX
+      ".js": "jsx",
+      ".ts": "tsx",
+      ".tsx": "tsx",
     },
     plugins: [
-      tailwindPlugin(), // Adds Tailwind CSS support
-      sassPlugin(), // Adds SASS support
       {
-        name: "css-plugin",
+        name: "css-injector",
         setup(build: any) {
-          build.onLoad({ filter: /\.css$/ }, async (args: any) => {
-            const css = readFileSync(args.path, "utf8");
+          // Handle CSS Modules
+          build.onLoad({ filter: /\.module\.(css|scss|sass)$/ }, async (args: any) => {
+            let css = readFileSync(args.path, "utf8");
+            
+            // Compile SCSS/SASS if needed
+            if (args.path.endsWith('.scss') || args.path.endsWith('.sass')) {
+              const sass = await import('sass');
+              const result = sass.compile(args.path, {
+                loadPaths: [join(process.cwd(), 'node_modules')],
+                silenceDeprecations: ['import']
+              });
+              css = result.css;
+            }
+            
+            // Process with PostCSS + Tailwind
+            const result = await postcss([
+              tailwindcss,
+              autoprefixer
+            ]).process(css, { from: args.path });
+            css = result.css;
+            
+            // Parse CSS and generate scoped class names
+            const classNames: Record<string, string> = {};
+            const scopeId = `_${Math.random().toString(36).substr(2, 9)}`;
+            
+            // Replace class names with scoped versions
+            const scopedCss = css.replace(/\.([a-zA-Z_][a-zA-Z0-9_-]*)/g, (match, className) => {
+              const scopedName = `${className}${scopeId}`;
+              classNames[className] = scopedName;
+              return `.${scopedName}`;
+            });
+            
             return {
-              contents: css, // Output the CSS content
-              loader: "css", // Treat this as CSS content
+              contents: `
+                const style = document.createElement('style');
+                style.textContent = ${JSON.stringify(scopedCss)};
+                document.head.appendChild(style);
+                export default ${JSON.stringify(classNames)};
+              `,
+              loader: "js",
+            };
+          });
+          
+          // Handle global CSS/SCSS
+          build.onLoad({ filter: /\.(css|scss|sass)$/ }, async (args: any) => {
+            let css = readFileSync(args.path, "utf8");
+            
+            // Compile SCSS/SASS if needed
+            if (args.path.endsWith('.scss') || args.path.endsWith('.sass')) {
+              const sass = await import('sass');
+              const result = sass.compile(args.path, {
+                loadPaths: [join(process.cwd(), 'node_modules')],
+                silenceDeprecations: ['import']
+              });
+              css = result.css;
+            }
+            
+            // Process with PostCSS + Tailwind
+            const result = await postcss([
+              tailwindcss,
+              autoprefixer
+            ]).process(css, { from: args.path });
+            css = result.css;
+            
+            return {
+              contents: `
+                const style = document.createElement('style');
+                style.textContent = ${JSON.stringify(css)};
+                document.head.appendChild(style);
+              `,
+              loader: "js",
             };
           });
         },
       },
     ],
     define: {
-      "process.env.NODE_ENV": JSON.stringify("production"), // Suppresses React DevTools message
+      "process.env.NODE_ENV": JSON.stringify("production"),
     },
     tsconfig: join(process.cwd(), "./tsconfig.json"),
     alias,

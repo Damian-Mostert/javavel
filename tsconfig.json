@@ -36,7 +36,7 @@
     }
   },
   "include": [
-    "vendor/global.d.ts",
+    "vendor/types/**/*.d.ts",
     "app/types/**/*.d.ts",
     "**/*.ts",
     "**/*.tsx",

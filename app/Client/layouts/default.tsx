@@ -1,3 +1,4 @@
+import "../styles/global.scss";
 import Footer from "../components/footer";
 import NavBar from "../components/navbar";
 

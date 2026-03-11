@@ -1,11 +1,12 @@
-import React from 'react';
-import { createRoot } from 'react-dom/client';
+import React from "react";
+import { createRoot } from "react-dom/client";
 
 async function bootstrap() {
+  //@ts-ignore
   const { layout, page, props } = window.__RENDER_CONFIG__;
-  
-  let PageComponent;
-  let LayoutComponent;
+
+  let PageComponent: any;
+  let LayoutComponent: any;
 
   // Dynamically import page from built files
   const pageModule = await import(`/_overreact/app/Client/pages/${page}.js`);
@@ -13,7 +14,9 @@ async function bootstrap() {
 
   // Dynamically import layout if provided
   if (layout) {
-    const layoutModule = await import(`/_overreact/app/Client/layouts/${layout}.js`);
+    const layoutModule = await import(
+      `/_overreact/app/Client/layouts/${layout}.js`
+    );
     LayoutComponent = layoutModule.default;
   }
 
