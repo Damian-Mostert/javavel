@@ -1,12 +1,5 @@
 import { Model } from "@/vendor/db";
-import Post from "./post";
-
-export default class User extends Model<{
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-}> {
+export default class User extends Model<user> {
   protected = ["id", "password"];
   table = "users";
   schema = {
@@ -21,9 +14,5 @@ export default class User extends Model<{
     last_name: "string",
     email: "string",
   };
-
-  posts() {
-    return this.hasMany(Post);
-  }
 }
 

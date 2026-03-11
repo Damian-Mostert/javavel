@@ -1,3 +1,3 @@
-export const AppConfig:Config = {
+const AppConfig: Config = {};
 
-};
+export default AppConfig;

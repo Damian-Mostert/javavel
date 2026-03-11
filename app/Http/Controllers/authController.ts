@@ -2,16 +2,16 @@ import { Controller, Req, Res } from "@/vendor/http";
 
 export default class authController extends Controller {
   use = ["authService"];
-  constructor(){
+  constructor() {
     super();
   }
-  async testMethod(req: Req, res: Res) {
+  async login(req: Req, res: Res) {
     return res.json();
   }
-  async testMethod2(req: Req, res: Res) {
+  async register(req: Req, res: Res) {
     return res.json();
   }
-  async testMethod3(req: Req, res: Res) {
+  async profile(req: Req, res: Res) {
     return res.json();
   }
 }
