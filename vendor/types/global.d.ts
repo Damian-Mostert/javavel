@@ -93,6 +93,13 @@ declare global {
     middleware: any[];
   };
 
+  type RedisConfig = {
+    host: string;
+    port: number;
+    password: string;
+    db: number;
+  };
+
   type Config = {
     [key: string]: any;
   };

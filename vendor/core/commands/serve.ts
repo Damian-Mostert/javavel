@@ -18,7 +18,13 @@ import {
   watch,
   WatchEventType,
 } from "fs";
+import Broadcast from "@/vendor/socket";
+import { Channel } from "@/vendor/socket";
+import "@/routes/channels";
+import EventDispatcher from "@/vendor/events";
 import { Req, Res } from "@/vendor/http";
+import RedisConfig from "@/config/redis";
+import { spawn } from "child_process";
 //@ts-ignore
 import multer from "multer";
 import esbuild from "esbuild";
@@ -26,10 +32,42 @@ import postcss from "postcss";
 //@ts-ignore
 import tailwindcss from "@tailwindcss/postcss";
 import autoprefixer from "autoprefixer";
+import BroadcastingConfig from "@/config/broadcasting";
+import { Channel } from "@/vendor/socket";
 import AppConfig from "@/config/app";
 
 const banner = (m: string) =>
   console.warn(chalk.bold(chalk.bgYellowBright(chalk.blackBright(m))));
+
+var REDIS_PROCESS: any = null;
+
+function startRedisServer(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    try {
+      // Try to start redis-server
+      REDIS_PROCESS = spawn("redis-server", [
+        "--port",
+        RedisConfig.port.toString(),
+        "--bind",
+        RedisConfig.host,
+      ]);
+
+      REDIS_PROCESS.on("error", (error: any) => {
+        console.warn(
+          chalk.yellow(
+            `⚠️  Redis server not found. Install redis-server or ensure it's in PATH.`,
+          ),
+        );
+        reject(error);
+      });
+
+      // Give Redis time to start
+      setTimeout(() => resolve(), 500);
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
 
 var SERVER: ReturnType<typeof createServer> | null = null;
 var restartTimeout: NodeJS.Timeout | null = null;
@@ -134,6 +172,21 @@ function convertToRes(expressRes: any): Res {
 }
 
 async function StartServer(args: any) {
+  // Start Redis server in background
+  try {
+    await startRedisServer();
+    console.log(
+      chalk.green(
+        `✓ Redis server started on ${RedisConfig.host}:${RedisConfig.port}`,
+      ),
+    );
+  } catch (error) {
+    console.warn(
+      chalk.yellow(
+        `⚠️  Could not start Redis server. Make sure redis-server is installed.`,
+      ),
+    );
+  }
   configDotenv({
     path: join(process.cwd(), ".env"),
     processEnv: process.env,
@@ -342,7 +395,102 @@ async function StartServer(args: any) {
   const controllers = HttpKernel.controllers;
   const middleware = HttpKernel.routeMiddleware;
 
-  io.on("connection", (socket) => {});
+  // Initialize Broadcast system
+  const broadcast = new Broadcast(io);
+  (global as any).broadcast = broadcast;
+
+  // Register channels
+  broadcast.registerChannels(Channel);
+
+  // Initialize Event Dispatcher with Redis
+  const redisUrl = `redis://${RedisConfig.password ? `:${RedisConfig.password}@` : ""}${RedisConfig.host}:${RedisConfig.port}/${RedisConfig.db}`;
+  const eventDispatcher = new EventDispatcher(io, redisUrl);
+  (global as any).eventDispatcher = eventDispatcher;
+  
+  // Subscribe to users channel to receive events from other instances (like tinker)
+  eventDispatcher.listen('users', (event) => {
+    console.log(`Event received: ${event.event}`, event.data);
+  });
+
+  // Track presence channels
+  const presenceChannels: Map<string, Map<string, any>> = new Map();
+
+  io.on("connection", async (socket) => {
+    const userId = socket.id;
+    console.log(`User connected: ${userId}`);
+
+    // Dynamically join user to all configured channels
+    Object.keys(BroadcastingConfig.channels).forEach((channel) => {
+      socket.join(channel);
+      console.log(`[Socket.IO] User ${userId} joined channel "${channel}"`);
+    });
+
+    // Handle presence channels
+    const channelApi = Channel;
+    const channels = channelApi.getChannels();
+    channels.forEach((ch: any) => {
+      if (ch.type === 'presence') {
+        const presenceChannel = `presence-${ch.name}`;
+        socket.join(presenceChannel);
+        
+        // Initialize presence channel if not exists
+        if (!presenceChannels.has(presenceChannel)) {
+          presenceChannels.set(presenceChannel, new Map());
+        }
+        
+        // Get current users in presence channel
+        const users = presenceChannels.get(presenceChannel)!;
+        const userData = ch.authorizer({ id: userId });
+        users.set(userId, userData);
+        
+        // Send current users to joining user
+        const usersObj: Record<string, any> = {};
+        users.forEach((data, id) => {
+          usersObj[id] = data;
+        });
+        socket.emit(`presence-${ch.name}:here`, usersObj);
+        
+        // Notify others of new user
+        socket.to(presenceChannel).emit(`presence-${ch.name}:joining`, userData);
+        
+        console.log(`[Presence] User ${userId} joined presence channel "${presenceChannel}"`);
+      }
+    });
+
+    // Dispatch user connected event
+    const { ConnectedEvent } = await import("@/app/Events/ConnectedEvent");
+    const connectedEvent = new ConnectedEvent(userId);
+    eventDispatcher.dispatch(connectedEvent);
+
+    // Listen for client events
+    socket.on("message", (data: any) => {
+      console.log(`Message from ${userId}:`, data);
+      eventDispatcher.dispatch({
+        broadcastOn: () => "users",
+        broadcastAs: () => "message",
+        broadcastWith: () => ({ userId, ...data }),
+      } as any);
+    });
+
+    socket.on("disconnect", async () => {
+      console.log(`User disconnected: ${userId}`);
+      
+      // Remove from presence channels
+      presenceChannels.forEach((users, presenceChannel) => {
+        if (users.has(userId)) {
+          users.delete(userId);
+          const channelName = presenceChannel.replace('presence-', '');
+          io.to(presenceChannel).emit(`presence-${channelName}:leaving`, { id: userId });
+          console.log(`[Presence] User ${userId} left presence channel "${presenceChannel}"`);
+        }
+      });
+      
+      // Dispatch user disconnected event
+      const { DisconnectedEvent } = await import("@/app/Events/DisconnectedEvent");
+      const disconnectedEvent = new DisconnectedEvent(userId);
+      eventDispatcher.dispatch(disconnectedEvent);
+    });
+  });
 
   // Register routes
   for (const route of routes) {
@@ -479,6 +627,15 @@ const ServeCommand: Command = {
     process.env.DEV_MODE = isDevMode ? "true" : "false";
 
     StartServer(args);
+    
+    // Cleanup on exit
+    process.on("SIGINT", () => {
+      if (REDIS_PROCESS) {
+        REDIS_PROCESS.kill();
+      }
+      process.exit(0);
+    });
+    
     if (isDevMode) {
       banner("Warning! Started server in dev mode. Watching for changes... ");
       watch(join(process.cwd(), ".env"), {}, handleRestart(args));

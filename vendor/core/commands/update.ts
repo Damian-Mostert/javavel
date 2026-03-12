@@ -10,7 +10,7 @@ const UpdateCommand: Command = {
   aliases: ["update"],
   description: "Update overreact",
   async handler(args: any) {
-    const repoUrl = "https://github.com/Damian-Mostert/javavel";
+    const repoUrl = "https://github.com/Damian-Mostert/overreact";
     const tempDir = path.join(process.cwd(), ".temp-update");
     const vendorPath = path.join(process.cwd(), "vendor");
     const backupPath = path.join(process.cwd(), "vendor.backup");

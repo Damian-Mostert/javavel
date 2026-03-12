@@ -1,0 +1,1 @@
+/*Load offline react page in the background*/

@@ -1,6 +1,26 @@
 import Button from "../components/button";
+import { useChannel, usePresence } from "@/vendor/client/sockets";
+import { useState } from "react";
 
 export default function Home() {
+  const [messages, setMessages] = useState<any[]>([]);
+
+  // Subscribe to public users channel
+  useChannel('user.connected', (data) => {
+    setMessages((prev) => [...prev, { type: 'connected', data, time: new Date().toLocaleTimeString() }]);
+  });
+
+  useChannel('user.disconnected', (data) => {
+    setMessages((prev) => [...prev, { type: 'disconnected', data, time: new Date().toLocaleTimeString() }]);
+  });
+
+  useChannel('test.broadcast', (data) => {
+    setMessages((prev) => [...prev, { type: 'broadcast', data, time: new Date().toLocaleTimeString() }]);
+  });
+
+  // Track online users in presence channel
+  const users = usePresence('online-users');
+
   return (
     <div className="min-h-screen">
       <section className="container mx-auto px-4 py-20 text-center">
@@ -14,6 +34,40 @@ export default function Home() {
         <div className="flex gap-4 justify-center">
           <Button variant="primary">Get Started</Button>
           <Button variant="outline">View Docs</Button>
+        </div>
+      </section>
+
+      <section className="container mx-auto px-4 py-20 bg-gray-900 rounded-lg">
+        <h2 className="text-2xl font-bold mb-6">Real-Time Socket.IO Demo</h2>
+        <div className="grid grid-cols-2 gap-8">
+          <div>
+            <h3 className="text-xl font-bold mb-4">Online Users ({Object.keys(users).length})</h3>
+            <ul className="bg-gray-800 p-4 rounded">
+              {Object.entries(users).length === 0 ? (
+                <li className="text-gray-400">No users online</li>
+              ) : (
+                Object.entries(users).map(([id, user]: [string, any]) => (
+                  <li key={id} className="text-green-400 mb-2">
+                    ✓ {user.name} ({user.email})
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+          <div>
+            <h3 className="text-xl font-bold mb-4">Recent Events</h3>
+            <ul className="bg-gray-800 p-4 rounded max-h-48 overflow-auto">
+              {messages.length === 0 ? (
+                <li className="text-gray-400">No events yet</li>
+              ) : (
+                messages.slice(-10).reverse().map((msg, idx) => (
+                  <li key={idx} className={msg.type === 'connected' ? 'text-green-400' : msg.type === 'disconnected' ? 'text-red-400' : 'text-blue-400'} style={{ marginBottom: '8px' }}>
+                    <strong>{msg.type === 'connected' ? '✓' : msg.type === 'disconnected' ? '✗' : '📢'}</strong> {msg.type === 'broadcast' ? msg.data.message : `User ${msg.data.userId}`} - {msg.time}
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
         </div>
       </section>
 
