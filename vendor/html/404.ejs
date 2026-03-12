@@ -19,34 +19,112 @@
       import React from "react";
       import { createRoot } from "react-dom/client";
       window.React = React;
+      window.__EARLY_ERRORS__ = [];
       
-      const pageModule = await import("/_overreact/app/Client/not-found.js");
-      const PageComponent = pageModule.default;
+      let root = null;
       
-      const isDevMode = "<%= process.env.DEV_MODE %>" === "true";
-      console.log("Dev mode:", isDevMode);
+      function getRoot() {
+        if (!root) {
+          root = createRoot(document.body);
+        }
+        return root;
+      }
       
-      let DevConsole = null;
-      if (isDevMode) {
+      async function showErrorPage() {
         try {
-          const devConsoleModule = await import("/_overreact/vendor/client/components/DevConsole.js");
-          DevConsole = devConsoleModule.default;
-          console.log("DevConsole loaded:", DevConsole);
+          const errorModule = await import("/_overreact/app/Client/error.js");
+          const ErrorComponent = errorModule.default;
+          
+          let DevConsole = null;
+          const isDevMode = "<%= process.env.DEV_MODE %>" === "true";
+          
+          if (isDevMode) {
+            try {
+              const devConsoleModule = await import("/_overreact/vendor/client/components/DevConsole.js");
+              DevConsole = devConsoleModule.default;
+            } catch (e) {
+              console.error("Failed to load DevConsole:", e);
+            }
+          }
+          
+          const App = () =>
+            React.createElement(
+              React.Fragment,
+              null,
+              React.createElement(ErrorComponent),
+              DevConsole && React.createElement(DevConsole),
+            );
+          
+          getRoot().render(React.createElement(App));
         } catch (e) {
-          console.error("Failed to load DevConsole:", e);
+          console.error("Error page failed to load:", e);
+          document.body.innerHTML = `
+            <div style="text-align:center;padding:50px;font-family:sans-serif;">
+              <h1 style="color:#ef4444;">Critical Error</h1>
+              <p>The application encountered a critical error and could not recover.</p>
+            </div>
+          `;
         }
       }
       
-      const App = () => {
-        const elements = [React.createElement(PageComponent)];
-        if (DevConsole) {
-          elements.push(React.createElement(DevConsole));
-        }
-        return React.createElement(React.Fragment, null, ...elements);
-      };
+      window.addEventListener("error", (event) => {
+        window.__EARLY_ERRORS__.push({
+          type: "error",
+          message: event.message,
+          stack: event.error?.stack,
+          timestamp: new Date(),
+        });
+        setTimeout(showErrorPage, 50);
+      });
       
-      const root = createRoot(document.body);
-      root.render(React.createElement(App));
+      window.addEventListener("unhandledrejection", (event) => {
+        window.__EARLY_ERRORS__.push({
+          type: "error",
+          message: `Unhandled Promise Rejection: ${event.reason}`,
+          timestamp: new Date(),
+        });
+        setTimeout(showErrorPage, 50);
+      });
+      
+      async function render404() {
+        try {
+          const pageModule = await import("/_overreact/app/Client/not-found.js");
+          const PageComponent = pageModule.default;
+          
+          const isDevMode = "<%= process.env.DEV_MODE %>" === "true";
+          
+          let DevConsole = null;
+          if (isDevMode) {
+            try {
+              const devConsoleModule = await import("/_overreact/vendor/client/components/DevConsole.js");
+              DevConsole = devConsoleModule.default;
+            } catch (e) {
+              console.error("Failed to load DevConsole:", e);
+            }
+          }
+          
+          const App = () => {
+            const elements = [React.createElement(PageComponent)];
+            if (DevConsole) {
+              elements.push(React.createElement(DevConsole));
+            }
+            return React.createElement(React.Fragment, null, ...elements);
+          };
+          
+          getRoot().render(React.createElement(App));
+        } catch (error) {
+          window.__EARLY_ERRORS__.push({
+            type: "error",
+            message: String(error),
+            stack: error?.stack,
+            timestamp: new Date(),
+          });
+          
+          showErrorPage();
+        }
+      }
+      
+      render404();
     </script>
   </body>
 </html>

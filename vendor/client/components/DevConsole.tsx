@@ -171,7 +171,7 @@ export default function DevConsole() {
             </button>
           </div>
 
-          <div className="flex-1 p-4 space-y-2">
+          <div className="flex-1 p-4 space-y-2 overflow-auto">
             {filteredLogs.length === 0 ? (
               <div className="text-gray-500 text-center py-8">
                 No logs to display

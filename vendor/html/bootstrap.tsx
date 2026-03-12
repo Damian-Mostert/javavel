@@ -81,21 +81,12 @@ async function showErrorPage() {
   } catch (e) {
     console.error("Error page failed to load:", e);
 
-    try {
-      const fallbackModule =
-        await import("/_overreact/vendor/html/fallback-error.js");
-
-      const FallbackComponent = fallbackModule.default;
-
-      getRoot().render(React.createElement(FallbackComponent));
-    } catch (fallbackError) {
-      document.body.innerHTML = `
-        <div style="text-align:center;padding:50px;font-family:sans-serif;">
-          <h1 style="color:#ef4444;">Critical Error</h1>
-          <p>The application encountered a critical error and could not recover.</p>
-        </div>
-      `;
-    }
+    document.body.innerHTML = `
+      <div style="text-align:center;padding:50px;font-family:sans-serif;">
+        <h1 style="color:#ef4444;">Critical Error</h1>
+        <p>The application encountered a critical error and could not recover.</p>
+      </div>
+    `;
   }
 }
 
