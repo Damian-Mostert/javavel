@@ -20,33 +20,34 @@
       import { createRoot } from "react-dom/client";
       window.React = React;
       window.__EARLY_ERRORS__ = [];
-      
+
       let root = null;
-      
+
       function getRoot() {
         if (!root) {
           root = createRoot(document.body);
         }
         return root;
       }
-      
+
       async function showErrorPage() {
         try {
           const errorModule = await import("/_overreact/app/Client/error.js");
           const ErrorComponent = errorModule.default;
-          
+
           let DevConsole = null;
           const isDevMode = "<%= process.env.DEV_MODE %>" === "true";
-          
+
           if (isDevMode) {
             try {
-              const devConsoleModule = await import("/_overreact/vendor/client/components/DevConsole.js");
+              const devConsoleModule =
+                await import("/_overreact/vendor/client/components/DevConsole.js");
               DevConsole = devConsoleModule.default;
             } catch (e) {
               console.error("Failed to load DevConsole:", e);
             }
           }
-          
+
           const App = () =>
             React.createElement(
               React.Fragment,
@@ -54,7 +55,7 @@
               React.createElement(ErrorComponent),
               DevConsole && React.createElement(DevConsole),
             );
-          
+
           getRoot().render(React.createElement(App));
         } catch (e) {
           console.error("Error page failed to load:", e);
@@ -66,7 +67,7 @@
           `;
         }
       }
-      
+
       window.addEventListener("error", (event) => {
         window.__EARLY_ERRORS__.push({
           type: "error",
@@ -76,7 +77,7 @@
         });
         setTimeout(showErrorPage, 50);
       });
-      
+
       window.addEventListener("unhandledrejection", (event) => {
         window.__EARLY_ERRORS__.push({
           type: "error",
@@ -85,24 +86,26 @@
         });
         setTimeout(showErrorPage, 50);
       });
-      
+
       async function render404() {
         try {
-          const pageModule = await import("/_overreact/app/Client/not-found.js");
+          const pageModule =
+            await import("/_overreact/app/Client/not-found.js");
           const PageComponent = pageModule.default;
-          
+
           const isDevMode = "<%= process.env.DEV_MODE %>" === "true";
-          
+
           let DevConsole = null;
           if (isDevMode) {
             try {
-              const devConsoleModule = await import("/_overreact/vendor/client/components/DevConsole.js");
+              const devConsoleModule =
+                await import("/_overreact/vendor/client/components/DevConsole.js");
               DevConsole = devConsoleModule.default;
             } catch (e) {
               console.error("Failed to load DevConsole:", e);
             }
           }
-          
+
           const App = () => {
             const elements = [React.createElement(PageComponent)];
             if (DevConsole) {
@@ -110,7 +113,7 @@
             }
             return React.createElement(React.Fragment, null, ...elements);
           };
-          
+
           getRoot().render(React.createElement(App));
         } catch (error) {
           window.__EARLY_ERRORS__.push({
@@ -119,11 +122,11 @@
             stack: error?.stack,
             timestamp: new Date(),
           });
-          
+
           showErrorPage();
         }
       }
-      
+
       render404();
     </script>
   </body>
