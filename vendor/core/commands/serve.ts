@@ -70,6 +70,7 @@ function startRedisServer(): Promise<void> {
 }
 
 var SERVER: ReturnType<typeof createServer> | null = null;
+var IO_INSTANCE: Server | null = null;
 var restartTimeout: NodeJS.Timeout | null = null;
 var isRestarting = false;
 
@@ -138,7 +139,7 @@ function convertToRes(expressRes: any): Res {
     },
     render: function (layout, page, props) {
       expressRes.render(
-        join(process.cwd(), "vendor/html/generic-react-template.ejs"),
+        "generic-react-template",
         { layout, page, props },
       );
       return "";
@@ -370,6 +371,7 @@ async function StartServer(args: any) {
   const app = express();
   const httpServer = createServer(app);
   const io = new Server(httpServer);
+  IO_INSTANCE = io;
 
   // Set up EJS template engine
   app.set("view engine", "ejs");
@@ -383,6 +385,10 @@ async function StartServer(args: any) {
 
   app.use(
     "/_overreact/",
+    (req, res, next) => {
+      res.setHeader("Service-Worker-Allowed", "/");
+      next();
+    },
     express.static(join(process.cwd(), "./vendor/.build/")),
   );
 
@@ -562,7 +568,7 @@ async function StartServer(args: any) {
   }
 
   app.use((_: any, res: any) => {
-    res.status(404).render("404", { process: { env: process.env } });
+    res.status(404).render("404");
   });
 
   const port = process.env.SERVER_PORT ?? 3000;
@@ -584,6 +590,12 @@ async function RestartServer(args: any) {
     debug: false,
     quiet: true,
   });
+
+  if (IO_INSTANCE) {
+    // Broadcast server update event to all connected clients
+    IO_INSTANCE.emit("server:updated");
+    console.log(chalk.blue("📢 Broadcasted server update event to all clients"));
+  }
 
   if (SERVER) {
     // Force close all connections

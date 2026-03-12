@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Wrench, X, AlertCircle, AlertTriangle, Filter } from "lucide-react";
+import { Wrench, X, AlertCircle, AlertTriangle, Filter, RefreshCw } from "lucide-react";
 
 export default function DevConsole() {
   const [logs, setLogs] = useState<
@@ -7,6 +7,7 @@ export default function DevConsole() {
   >([]);
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "errors" | "warnings">("all");
+  const [serverUpdated, setServerUpdated] = useState(false);
 
   useEffect(() => {
     // Load early errors from global array
@@ -83,6 +84,38 @@ export default function DevConsole() {
     };
   }, []);
 
+  // Listen for server updates via Socket.IO
+  useEffect(() => {
+    const setupServerUpdateListener = async () => {
+      try {
+        const { io } = await import("socket.io-client");
+        const socket = io();
+
+        socket.on("server:updated", () => {
+          console.warn("Server has been updated!");
+          setServerUpdated(true);
+          setIsOpen(true);
+          setLogs((prev) => [
+            ...prev,
+            {
+              type: "warning",
+              message: "🔄 Server has been updated. Refresh to load new changes.",
+              timestamp: new Date(),
+            },
+          ]);
+        });
+
+        return () => {
+          socket.off("server:updated");
+        };
+      } catch (e) {
+        console.warn("Failed to setup server update listener:", e);
+      }
+    };
+
+    setupServerUpdateListener();
+  }, []);
+
   const filteredLogs = logs.filter((log) => {
     if (filter === "all") return true;
     if (filter === "errors") return log.type === "error";
@@ -110,6 +143,11 @@ export default function DevConsole() {
             {warningCount}
           </span>
         )}
+        {serverUpdated && (
+          <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">
+            ⚡
+          </span>
+        )}
       </button>
 
       {isOpen && (
@@ -120,6 +158,15 @@ export default function DevConsole() {
               Development Console
             </h3>
             <div className="flex items-center gap-2">
+              {serverUpdated && (
+                <button
+                  onClick={() => location.reload()}
+                  className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded transition flex items-center gap-1"
+                >
+                  <RefreshCw size={14} />
+                  Refresh
+                </button>
+              )}
               <button
                 onClick={() => setLogs([])}
                 className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded transition"

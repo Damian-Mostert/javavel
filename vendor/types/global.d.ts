@@ -74,6 +74,7 @@ declare global {
 
   type ClientConfig = {
     appName: string;
+    socketReconnectTimeout?: number;
   };
 
   type CmsConfig = {
