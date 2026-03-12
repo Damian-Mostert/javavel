@@ -18,8 +18,6 @@ import {
   watch,
   WatchEventType,
 } from "fs";
-import debuggerRouter from "./serve/debugger/router";
-import cmsRouter from "./serve/cms/router";
 import { Req, Res } from "@/vendor/http";
 //@ts-ignore
 import multer from "multer";
@@ -194,9 +192,6 @@ async function StartServer(args: any) {
     entryPoints: [
       ...clientFiles,
       ...vendorClientFiles,
-      join(process.cwd(), "./vendor/html/cms.tsx"),
-      join(process.cwd(), "./vendor/html/debugger.tsx"),
-      join(process.cwd(), "./vendor/html/bootstrap.tsx"),
     ],
     bundle: true,
     outdir: buildDir,
@@ -340,8 +335,6 @@ async function StartServer(args: any) {
 
   app.use(upload.any());
   app.use(express.static("public"));
-  app.use(debuggerRouter);
-  app.use(cmsRouter);
 
   const { HttpKernel, CommandKernel } = await LoadEnviroment();
   const routes = Route.getRoutes();

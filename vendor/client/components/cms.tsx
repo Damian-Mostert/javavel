@@ -1,6 +1,4 @@
-import { createRoot } from "react-dom/client";
-
-function App() {
+export default function Cms() {
   return (
     <div style={{ fontFamily: "Arial, sans-serif", padding: "20px" }}>
       <h1>CMS</h1>
@@ -8,6 +6,3 @@ function App() {
     </div>
   );
 }
-
-const root = createRoot(document.body);
-root.render(<App />);
