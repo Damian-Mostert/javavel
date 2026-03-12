@@ -1,3 +1,5 @@
+import { env } from "@/vendor/utils";
+
 const AppConfig: AppConfig = {
   name: env("APP_NAME", "Overreact"),
   env: env("APP_ENV", "production"),

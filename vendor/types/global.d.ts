@@ -96,15 +96,10 @@ declare global {
   type Config = {
     [key: string]: any;
   };
-  function config(
-    path: DotPath,
-    fallback?: any,
-  ): string | number | boolean | Record<string, any> | null;
-  function env(key: string, fallback?: any): any;
-  function redirect(url: string): Promise<any>;
   type LayoutProps = {
     Children: () => React.ReactNode;
   };
+
   type ValidatorString =
     | "required"
     | "email"

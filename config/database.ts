@@ -1,3 +1,5 @@
+import { env } from "@/vendor/utils";
+
 const DatabaseConfig: DatabaseConfig = {
   driver: env("DB_DRIVER", "mysql"),
   host: env("DB_HOST", "localhost"),

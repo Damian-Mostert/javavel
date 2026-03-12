@@ -1,3 +1,5 @@
+import { env } from "@/vendor/utils";
+
 const StorageConfig: StorageConfig = {
   default: env("STORAGE_DRIVER", "local"),
   disks: {

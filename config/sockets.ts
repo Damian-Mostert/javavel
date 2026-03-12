@@ -1,3 +1,5 @@
+import { env } from "@/vendor/utils";
+
 const SocketsConfig: SocketsConfig = {
   enabled: env("SOCKETS_ENABLED", true),
   port: env("SOCKETS_PORT", 3001),

@@ -1,3 +1,5 @@
+import { env } from "@/vendor/utils";
+
 const MailConfig: MailConfig = {
   provider: env("MAIL_PROVIDER", "smtp"),
   from: {

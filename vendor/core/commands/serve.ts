@@ -28,6 +28,7 @@ import postcss from "postcss";
 //@ts-ignore
 import tailwindcss from "@tailwindcss/postcss";
 import autoprefixer from "autoprefixer";
+import AppConfig from "@/config/app";
 
 const banner = (m: string) =>
   console.warn(chalk.bold(chalk.bgYellowBright(chalk.blackBright(m))));
@@ -145,7 +146,6 @@ async function StartServer(args: any) {
   const isDevMode = args[0] === "dev";
   process.env.DEV_MODE = isDevMode ? "true" : "false";
 
-  (global as any).env = (key: string, def?: string) => process.env[key] || def;
   const tsConfigPath = join(process.cwd(), "tsconfig.json");
   const tsConfig = JSON.parse(readFileSync(tsConfigPath, "utf8"));
   const aliasPaths = tsConfig.compilerOptions?.paths || {};
@@ -298,7 +298,7 @@ async function StartServer(args: any) {
       },
     ],
     define: {
-      "process.env.NODE_ENV": JSON.stringify("production"),
+      "process.env.NODE_ENV": JSON.stringify(AppConfig),
     },
     tsconfig: join(process.cwd(), "./tsconfig.json"),
     alias,
