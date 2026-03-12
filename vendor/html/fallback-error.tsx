@@ -1,3 +1,4 @@
+//import "./css/fallback.scss";
 import { AlertCircleIcon } from "lucide-react";
 
 export default function Error() {
@@ -7,7 +8,7 @@ export default function Error() {
         <div className="text-9xl mb-4 mx-auto w-min">
           <AlertCircleIcon />
         </div>
-        <h1 className="text-4xl font-bold mb-4 text-red-500">Error</h1>
+        <h1 className="text-4xl font-bold mb-4 text-red-500">Critical Error</h1>
         <p className="text-gray-400 mb-8">
           We encountered a critical error that prevented the application from
           loading properly. This is a fallback page shown when the main error

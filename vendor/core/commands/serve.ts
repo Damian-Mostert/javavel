@@ -142,6 +142,9 @@ async function StartServer(args: any) {
     quiet: true,
   });
 
+  const isDevMode = args[0] === "dev";
+  process.env.DEV_MODE = isDevMode ? "true" : "false";
+
   (global as any).env = (key: string, def?: string) => process.env[key] || def;
   const tsConfigPath = join(process.cwd(), "tsconfig.json");
   const tsConfig = JSON.parse(readFileSync(tsConfigPath, "utf8"));
@@ -173,9 +176,12 @@ async function StartServer(args: any) {
     })
     .map((s: any) => join(process.cwd(), "./app/Client", s.toString()));
 
-  const vendorClientFiles = readdirSync(join(process.cwd(), "./vendor/client"), {
-    recursive: true,
-  })
+  const vendorClientFiles = readdirSync(
+    join(process.cwd(), "./vendor/client"),
+    {
+      recursive: true,
+    },
+  )
     .filter((file: any) => {
       const ext = file.toString().split(".").pop();
       return ["js", "jsx", "ts", "tsx", "css", "scss", "sass"].includes(
@@ -199,7 +205,7 @@ async function StartServer(args: any) {
     minify: false,
     platform: "browser",
     format: "esm",
-    external: ["react", "react-dom", "lucide-react"],
+    external: ["react", "react-dom", "react-dom/client", "lucide-react"],
     loader: {
       ".js": "jsx",
       ".ts": "tsx",
@@ -321,20 +327,16 @@ async function StartServer(args: any) {
   app.set("view engine", "ejs");
   app.set("views", [
     join(process.cwd(), "app/Mail/templates"),
-    join(process.cwd(), "vendor/html")
+    join(process.cwd(), "vendor/html"),
   ]);
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
-  app.get("/_overreact/core.css", (_: never, res: any) => {
-    res.sendFile(join(process.cwd(), "./vendor/html/core.css"));
-  });
-  app.use("/_overreact/", express.static(join(process.cwd(), "./vendor/.build/")));
 
-  // Error page route
-  app.get("/_overreact_error", (_: any, res: any) => {
-    res.status(500).render("error", { process: { env: process.env } });
-  });
+  app.use(
+    "/_overreact/",
+    express.static(join(process.cwd(), "./vendor/.build/")),
+  );
 
   app.use(upload.any());
   app.use(express.static("public"));
@@ -482,7 +484,7 @@ const ServeCommand: Command = {
   handler(args) {
     const isDevMode = args[0] === "dev";
     process.env.DEV_MODE = isDevMode ? "true" : "false";
-    
+
     StartServer(args);
     if (isDevMode) {
       banner("Warning! Started server in dev mode. Watching for changes... ");

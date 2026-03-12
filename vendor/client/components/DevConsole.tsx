@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Wrench, X, AlertCircle, AlertTriangle, Filter } from "lucide-react";
 
 export default function DevConsole() {
-  const [logs, setLogs] = useState<Array<{ type: string; message: string; stack?: string; timestamp: Date }>>([]);
+  const [logs, setLogs] = useState<
+    Array<{ type: string; message: string; stack?: string; timestamp: Date }>
+  >([]);
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "errors" | "warnings">("all");
 
@@ -24,7 +26,9 @@ export default function DevConsole() {
         ...prev,
         {
           type: "error",
-          message: args.map(a => typeof a === "object" ? JSON.stringify(a) : String(a)).join(" "),
+          message: args
+            .map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a)))
+            .join(" "),
           stack: args[0]?.stack,
           timestamp: new Date(),
         },
@@ -37,7 +41,9 @@ export default function DevConsole() {
         ...prev,
         {
           type: "warning",
-          message: args.map(a => typeof a === "object" ? JSON.stringify(a) : String(a)).join(" "),
+          message: args
+            .map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a)))
+            .join(" "),
           timestamp: new Date(),
         },
       ]);
@@ -94,12 +100,15 @@ export default function DevConsole() {
         className="fixed bottom-4 right-4 z-[9999] bg-gray-900 text-white px-4 py-2 rounded-lg shadow-lg border border-gray-700 hover:bg-gray-800 transition flex items-center gap-2"
       >
         <Wrench size={18} />
-        <span>Dev</span>
         {errorCount > 0 && (
-          <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">{errorCount}</span>
+          <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+            {errorCount}
+          </span>
         )}
         {warningCount > 0 && (
-          <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">{warningCount}</span>
+          <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">
+            {warningCount}
+          </span>
         )}
       </button>
 
@@ -130,7 +139,9 @@ export default function DevConsole() {
             <button
               onClick={() => setFilter("all")}
               className={`px-3 py-1 rounded text-sm transition flex items-center gap-1 ${
-                filter === "all" ? "bg-orange-500 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                filter === "all"
+                  ? "bg-orange-500 text-white"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
               }`}
             >
               <Filter size={14} />
@@ -139,7 +150,9 @@ export default function DevConsole() {
             <button
               onClick={() => setFilter("errors")}
               className={`px-3 py-1 rounded text-sm transition flex items-center gap-1 ${
-                filter === "errors" ? "bg-red-500 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                filter === "errors"
+                  ? "bg-red-500 text-white"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
               }`}
             >
               <AlertCircle size={14} />
@@ -148,7 +161,9 @@ export default function DevConsole() {
             <button
               onClick={() => setFilter("warnings")}
               className={`px-3 py-1 rounded text-sm transition flex items-center gap-1 ${
-                filter === "warnings" ? "bg-yellow-500 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                filter === "warnings"
+                  ? "bg-yellow-500 text-white"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
               }`}
             >
               <AlertTriangle size={14} />
@@ -156,14 +171,16 @@ export default function DevConsole() {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          <div className="flex-1 p-4 space-y-2">
             {filteredLogs.length === 0 ? (
-              <div className="text-gray-500 text-center py-8">No logs to display</div>
+              <div className="text-gray-500 text-center py-8">
+                No logs to display
+              </div>
             ) : (
               filteredLogs.map((log, index) => (
                 <div
                   key={index}
-                  className={`p-3 rounded border ${
+                  className={`p-3 rounded border overflow-y-auto ${
                     log.type === "error"
                       ? "bg-red-900/20 border-red-500/50"
                       : "bg-yellow-900/20 border-yellow-500/50"
@@ -171,18 +188,28 @@ export default function DevConsole() {
                 >
                   <div className="flex items-start gap-2">
                     {log.type === "error" ? (
-                      <AlertCircle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
+                      <AlertCircle
+                        size={18}
+                        className="text-red-500 flex-shrink-0 mt-0.5"
+                      />
                     ) : (
-                      <AlertTriangle size={18} className="text-yellow-500 flex-shrink-0 mt-0.5" />
+                      <AlertTriangle
+                        size={18}
+                        className="text-yellow-500 flex-shrink-0 mt-0.5"
+                      />
                     )}
                     <div className="flex-1">
-                      <div className="text-white text-sm font-mono">{log.message}</div>
+                      <div className="text-white text-sm font-mono">
+                        {log.message}
+                      </div>
                       {log.stack && (
                         <details className="mt-2">
                           <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-300">
                             Stack trace
                           </summary>
-                          <pre className="text-xs text-gray-400 mt-2 overflow-x-auto">{log.stack}</pre>
+                          <pre className="text-xs text-gray-400 mt-2 overflow-x-auto">
+                            {log.stack}
+                          </pre>
                         </details>
                       )}
                       <div className="text-xs text-gray-500 mt-1">
